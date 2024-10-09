@@ -1,27 +1,3 @@
-modelName = 'servoPDF'
-open_system(modelName)
-target_uri_1='tcpip://172.22.11.2:17000?keep_alive=1 ';
-target_uri_2='tcpip://172.22.11.10:17000?keep_alive=1 ';
-
-std_args = ' -d /tmp -uri tcpip://linux-dev:17001';
-
-
-args = '';
-args_1 = ['-t ' target_uri_1]
-args_2 = ['-t ' target_uri_2]
-
-qc_set_model_arguments(modelName,args_1)
-result = qc_load_model(target_uri_1, modelName, args)
-num_bytes = qc_download_model(modelName)
-%qc_start_model(modelName)
-
-kp = 2; kd = 0.2; pf = 200;
-qc_set_model_arguments(modelName,args_2)
-qc_update_model(modelName);
-qc_build_model(modelName)
-num_bytes = qc_download_model(modelName)
-res = qc_load_model(target_uri_1,modelName)
-
 
 sys1dl= ['quarc_run -D -t '  target_uri_1  modelName '.rt-linux_rt_armv7' std_args];
 sys2dl= ['quarc_run -D -t '  target_uri_2  modelName '.rt-linux_rt_armv7' std_args];
