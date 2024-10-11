@@ -10,10 +10,10 @@ import GPy
 
 ################ PHASE 1 ################
 
-def retrieve_data(target_uri, modelName, gain_arg, std_args,agent):
+def retrieve_data(target_uri, modelName, gain_arg, std_args, agent):
     sys_get = f'quarc_run -u -t {target_uri} {modelName}.rt-linux_rt_armv7{gain_arg}{std_args}'
     subprocess.call(sys_get, shell=True)
-    shutil.copyfile('servoPDF.mat', 'servoPDF-{agent}.mat')
+    shutil.copyfile('servoPDF.mat', f'servoPDF-{agent}.mat')
     
 def load_agent_data(filename):
     data = loadmat(filename)
