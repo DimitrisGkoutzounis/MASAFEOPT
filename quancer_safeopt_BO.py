@@ -42,18 +42,20 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
 def plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2):
     plt.figure(1)
     plt.subplot(1,2,1)
-    plt.subplot(rt_t1, rt_theta1, label='Agent-1')
-    plt.subplot(rt_t2, rt_theta2, label='Agent-2')
+    plt.plot(rt_t1, rt_theta1, label='Agent-1')
+    plt.plot(rt_t2, rt_theta2, label='Agent-2')
     plt.grid(True)
     plt.xlabel('t (s)')
     plt.ylabel('theta')
+    plt.title("Theta over time")
     
     plt.subplot(1,2,2)
-    plt.plot(rt_t1, os1, label='Agent-1 OS')
-    plt.plot(rt_t2, os2, label='Agent-2 OS')
+    plt.plot(rt_t1[:4000], os1[:4000], label='Agent-1 OS')
+    plt.plot(rt_t2[:4000], os2[:4000], label='Agent-2 OS')
     plt.grid(True)
     plt.xlabel('t (s)')
     plt.ylabel('theta')
+    plt.title("Error over time")
     plt.legend()
     plt.show()
 
@@ -126,7 +128,7 @@ reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2
 print(f'Initial reward: {reward_0}')
 
 plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
-exit(0)
+# exit(0)
 
 # =================== Bayesian Optimization ===================
 
