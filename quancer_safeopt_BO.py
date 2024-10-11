@@ -10,12 +10,31 @@ import GPy
 
 ################ PHASE 1 ################
 
+def sent_command(target_uri, modelName, gain_arg, std_args):
+    """
+    Send command to the target.
+    """
+    sys_run = f'quarc_run -l -t {target_uri} {modelName}.rt-linux_rt_armv7{gain_arg} {std_args}'
+    subprocess.call(sys_run, shell=True)
+    
+
 def retrieve_data(target_uri, modelName, gain_arg, std_args, agent):
+    """
+    Retrieve data from the target.
+    """
     sys_get = f'quarc_run -u -t {target_uri} {modelName}.rt-linux_rt_armv7{gain_arg}{std_args}'
     subprocess.call(sys_get, shell=True)
     shutil.copyfile('servoPDF.mat', f'servoPDF-{agent}.mat')
     
 def load_agent_data(filename):
+    """
+    Load data from the agent and extract relevant data
+    
+    Returns:
+    rt_t: Time
+    rt_theta: Theta
+    theta_d
+    """
     data = loadmat(filename)
     rt_t = data['rt_t'].flatten()
     rt_theta = data['rt_theta'].flatten()
@@ -24,6 +43,17 @@ def load_agent_data(filename):
 
     
 def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
+    """
+    Computes the total reward for the agents
+    
+    Reward = integral{abs(theta_d - rt_theta)}dt
+    
+    Returns:
+    total_error: Total reward
+    os1: Overshoot error for agent 1
+    os2: Overshoot error for agent 2
+    
+    """
     # Overshoot error
     os1 = np.abs(theta_d - rt_theta1)
     os2 = np.abs(theta_d - rt_theta2)
@@ -40,6 +70,9 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     return total_error,os1,os2
        
 def plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2):
+    """
+    Plot the data from the agents
+    """
     plt.figure(1)
     plt.subplot(1,2,1)
     plt.plot(rt_t1, rt_theta1, label='Agent-1')
@@ -104,10 +137,13 @@ sys2run = f'quarc_run -l -t {target_uri_2} {modelName}.rt-linux_rt_armv7{gain_ar
 subprocess.call(sys1run, shell=True)
 subprocess.call(sys2run, shell=True)
 
+sent_command(target_uri_1, modelName, gain_arg1, std_args,1)
+sent_command(target_uri_2, modelName, gain_arg2, std_args,2)
+
 # wait for the experiment to finish
 # this should be replaced with a more robust method, where the script waits for the experiment to finish
 # Possibly by checking the port for incoming data
-time.sleep(6)
+time.sleep(5.5)
 
 
 #retrieve data from Agent 1
@@ -127,7 +163,7 @@ reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2
 
 print(f'Initial reward: {reward_0}')
 
-plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
+# plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
 # exit(0)
 
 # =================== Bayesian Optimization ===================
@@ -166,7 +202,7 @@ kp_bounds = (0.01, 400)
 agent1 = Agent(1, kp_bounds, kp1_0,reward_0)
 agent2 = Agent(2, kp_bounds, kp2_0,reward_0)
 
-# Define function to run the experiment and compute the error
+
 def run_experiment(kp1, kp2):
     # Build the commands using kp1 and kp2
     kp1_value = kp1[0]  # Extract value from array
@@ -176,48 +212,23 @@ def run_experiment(kp1, kp2):
     gain_arg1 = f' -Kp {kp1_value:.4f} -Kd {kd1_0:.4f}'
     gain_arg2 = f' -Kp {kp2_value:.4f} -Kd {kd2_0:.4f}'
 
-    # set system commands
-    sys1run = f'quarc_run -l -t {target_uri_1} {modelName}.rt-linux_rt_armv7{gain_arg1} {std_args}'
-    sys2run = f'quarc_run -l -t {target_uri_2} {modelName}.rt-linux_rt_armv7{gain_arg2} {std_args}'
-
-    # Run the commands
-    subprocess.call(sys1run, shell=True)
-    subprocess.call(sys2run, shell=True)
+    
+    sent_command(target_uri_1, modelName, gain_arg1, std_args,1)
+    sent_command(target_uri_2, modelName, gain_arg2, std_args,2)
 
     # await experiment completion
-    time.sleep(6)
+    time.sleep(5.5)
 
-    # Retrieve data
-    sys1get = f'quarc_run -u -t {target_uri_1} {modelName}.rt-linux_rt_armv7{gain_arg1} {std_args}'
-    sys2get = f'quarc_run -u -t {target_uri_2} {modelName}.rt-linux_rt_armv7{gain_arg2} {std_args}'
-
-    subprocess.call(sys1get, shell=True)
-    shutil.copyfile('servoPDF.mat', 'servoPDF-1.mat')
-
-    subprocess.call(sys2get, shell=True)
-    shutil.copyfile('servoPDF.mat', 'servoPDF-2.mat')
-
-    # Load data
     
-    data1 = loadmat('servoPDF-1.mat')
-    rt_t1 = data1['rt_t'].flatten()
-    rt_theta1 = data1['rt_theta'].flatten()
+    retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
+    retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
 
-    data2 = loadmat('servoPDF-2.mat')
-    rt_t2 = data2['rt_t'].flatten()
-    rt_theta2 = data2['rt_theta'].flatten()
+    rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
+    rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
+    
+    reward, os1 , os2 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
-    theta_d = data1['rt_theta_d'].flatten()
-
-    # Compute overshoot error
-    os1 = theta_d - rt_theta1
-    os2 = theta_d - rt_theta2
-
-    # Compute integral of the errors
-    integral_error1 = np.trapz(np.abs(os1), rt_t1)
-    integral_error2 = np.trapz(np.abs(os2), rt_t2)
-
-    return integral_error1, integral_error2
+    return reward,os1, os2
 
 
 N = 10  # Number of iterations
@@ -230,20 +241,21 @@ for iteration in range(N):
     print(f"Iteration {iteration+1}, Agent 1 Kp: {kp1_next[0]:.4f}, Agent 2 Kp: {kp2_next[0]:.4f}")
 
     # Run the experiment with kp1_next and kp2_next
-    integral_error1, integral_error2 = run_experiment(kp1_next, kp2_next)
+    y,_,_ = run_experiment(kp1_next, kp2_next)
 
-    # Use negative of the integral error as reward (since we want to minimize error)
-    reward1 = -integral_error1
-    reward2 = -integral_error2
-
-    print(f"Agent 1 reward: {reward1}, Agent 2 reward: {reward2}")
-
+    print(f"Reward: {y}")
+    
     # Update agents with observations
-    agent1.update(kp1_next, reward1)
-    agent2.update(kp2_next, reward2)
+    agent1.update(kp1_next, y)
+    agent2.update(kp2_next, y)
+    
+    
+print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
 iterations = range(len(agent1.kp_values))
+
+
 
 plt.figure()
 plt.plot(iterations, agent1.kp_values, label='Agent 1 Kp')
