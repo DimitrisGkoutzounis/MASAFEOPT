@@ -189,7 +189,7 @@ class Agent:
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, -np.inf, beta=10,threshold=0.2)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, -np.inf, beta=4,threshold=0.2)
 
         self.kp_values = [safe_point]
         self.rewards = []
@@ -217,8 +217,8 @@ def run_experiment(kp1, kp2):
     kp2_value = kp2[0]
 
     # set gain arguments
-    gain_arg1 = f' -Kp {kp1_value} -Kd {kd1_0}'
-    gain_arg2 = f' -Kp {kp2_value} -Kd {kd2_0}'
+    gain_arg1 = f' -Kp {kp1_value:.4f} -Kd {kd1_0:.4f}'
+    gain_arg2 = f' -Kp {kp2_value:.4f} -Kd {kd2_0:.4f}'
 
     
     sent_command(target_uri_1, modelName, gain_arg1, std_args)
@@ -236,7 +236,6 @@ def run_experiment(kp1, kp2):
     
     reward, os1 , os2 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
-
     return reward,os1, os2
 
 
@@ -248,7 +247,7 @@ for iteration in range(N):
     kp1_next = agent1.optimize()
     kp2_next = agent2.optimize()
 
-    print(f"Iteration {iteration+1}, Agent 1 Kp: {kp1_next[0]}, Agent 2 Kp: {kp2_next[0]}")
+    print(f"Iteration {iteration+1}, Agent 1 Kp: {kp1_next[0]:.4f}, Agent 2 Kp: {kp2_next[0]:.4f}")
 
     # Run the experiment with kp1_next and kp2_next
     y,_,_ = run_experiment(kp1_next, kp2_next)
@@ -271,7 +270,7 @@ for iteration in range(N):
 print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
-iterations = range(len(agent1.kp_values -1))
+iterations = range(len(agent1.kp_values))
 
 
 
@@ -287,8 +286,8 @@ plt.show()
 
 # Plot rewards over iterations
 plt.figure()
-plt.plot(iterations, agent1.rewards, label='Agent 1 Reward')
-plt.plot(iterations, agent2.rewards, label='Agent 2 Reward')
+plt.plot(iterations-1, agent1.rewards, label='Agent 1 Reward')
+plt.plot(iterations-1, agent2.rewards, label='Agent 2 Reward')
 plt.xlabel('Iteration')
 plt.ylabel('Reward')
 plt.legend()
