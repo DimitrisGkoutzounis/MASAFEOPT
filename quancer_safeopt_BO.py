@@ -116,8 +116,8 @@ subprocess.call(sys2dl, shell=True)
 # Initial safepoint values.
 
 
-kp1_0 = 10
-kd1_0 = 0.02
+kp1_0 = 2
+kd1_0 = 0.5
 
 kp2_0 = 1
 kd2_0 = 0.5
@@ -191,7 +191,7 @@ class Agent:
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
         self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, -np.inf, beta=10,threshold=0.2)
 
-        self.kp_values = [safe_point]
+        self.kp_values = []
         self.rewards = []
 
     def optimize(self):
@@ -207,8 +207,8 @@ class Agent:
 # Kp bounds
 kp_bounds = (0.01, 400)
 
-agent1 = Agent(1, kp_bounds, kp1_0,reward_0)
-agent2 = Agent(2, kp_bounds, kp2_0,reward_0)
+agent1 = Agent(1, kp_bounds, kp1_0,-reward_0)
+agent2 = Agent(2, kp_bounds, kp2_0,-reward_0)
 
 # Quancer Experiment
 def run_experiment(kp1, kp2):
@@ -249,8 +249,10 @@ for iteration in range(N):
     # Get next Kp values from agents
     kp1_next = agent1.optimize()
     kp2_next = agent2.optimize()
+    print(kp1_next)
+    print(kp2_next)
 
-    print(f"Iteration {iteration+1}, Agent 1 Kp: {kp1_next[0]}, Agent 2 Kp: {kp2_next[0]}")
+    print(f"Iteration {iteration}, Agent 1 Kp: {kp1_next[0]}, Agent 2 Kp: {kp2_next[0]}")
 
     # Run the experiment with kp1_next and kp2_next
     y,_,_ = run_experiment(kp1_next, kp2_next)
