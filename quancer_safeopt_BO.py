@@ -25,21 +25,29 @@ def load_agent_data(filename):
     
 def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     # Overshoot error
-    os1 = theta_d - rt_theta1
-    os2 = theta_d - rt_theta2
-
+    os1 = np.abs(theta_d - rt_theta1)
+    os2 = np.abs(theta_d - rt_theta2)
     # Compute error between the two agents
     error12 = rt_theta1 - rt_theta2
 
     # Compute integral of errors
     integral_os1 = np.trapz(os1, rt_t1)
     integral_os2 = np.trapz(os2, rt_t2)
-    total_os = integral_error1 + integral_error2
+    total_os = integral_os1 + integral_os2
     integral_error12 = np.trapz(error12, rt_t1)
-    total_error = integral_error12 + total_os
+    total_error = total_os
     
     return total_error,os1,os2
-        
+       
+def plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2):
+    plt.figure(1)
+    plt.subplot(rt_t1, rt_theta1, label='Agent-1')
+    plt.subplot(rt_t2, rt_theta2, label='Agent-2')
+    plt.grid(True)
+    plt.xlabel('t (s)')
+    plt.ylabel('theta')
+    plt.legend()
+    plt.show()
 
 
 modelName = 'servoPDF'
@@ -60,11 +68,11 @@ subprocess.call(sys2dl, shell=True)
 # Initial safepoint values.
 
 
-kp1_0 = 0.11
-kd1_0 = 0.05
+kp1_0 = 1
+kd1_0 = 0.2
 
-kp2_0 = 0.09
-kd2_0 = 0.05
+kp2_0 = 0
+kd2_0 = 0.2
 
 
 #delay difference between the two agents
@@ -105,7 +113,7 @@ rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
 rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
 
 #compute initial safe reward
-reward_0, _ , _ = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
+reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
 print(f'Initial reward: {reward_0}')
 exit(0)
