@@ -201,7 +201,7 @@ class Agent:
 
     def update(self, x_next, y_meas):
         self.opt.add_new_data_point(x_next, y_meas)
-        self.kp_values.append(x_next[0])
+        self.kp_values.append(x_next)
         self.rewards.append(y_meas)
 
 # Kp bounds
@@ -212,13 +212,10 @@ agent2 = Agent(2, kp_bounds, kp2_0,-reward_0)
 
 # Quancer Experiment
 def run_experiment(kp1, kp2):
-    # Build the commands using kp1 and kp2
-    kp1_value = kp1[0]  # Extract value from array
-    kp2_value = kp2[0]
 
     # set gain arguments
-    gain_arg1 = f' -Kp {kp1_value} -Kd {kd1_0}'
-    gain_arg2 = f' -Kp {kp2_value} -Kd {kd2_0}'
+    gain_arg1 = f' -Kp {kp1} -Kd {kd1_0}'
+    gain_arg2 = f' -Kp {kp2} -Kd {kd2_0}'
 
     
     sent_command(target_uri_1, modelName, gain_arg1, std_args)
@@ -249,22 +246,13 @@ for iteration in range(N):
     # Get next Kp values from agents
     kp1_next = agent1.optimize()
     kp2_next = agent2.optimize()
-    print(kp1_next)
-    print(kp2_next)
 
-    print(f"Iteration {iteration}, Agent 1 Kp: {kp1_next[0]}, Agent 2 Kp: {kp2_next[0]}")
+    print(f"Iteration {iteration}, Agent 1 Kp: {kp1_next}, Agent 2 Kp: {kp2_next}")
 
-    # Run the experiment with kp1_next and kp2_next
     y,_,_ = run_experiment(kp1_next, kp2_next)
 
     print(f"Reward: {y}")
     
-    print(agent1.opt.x)
-    print(agent2.opt.x)
-
-    print(agent1.opt.get_maximum())
-    print(agent2.opt.get_maximum())
-
 
     # Update agents with observations
     
@@ -275,27 +263,16 @@ for iteration in range(N):
 print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
-iterations = range(len(agent1.kp_values -1))
+iterations = range(len(agent1.kp_values))
 
+plt.figure(3)
 
-
-plt.figure()
-plt.plot(iterations, agent1.kp_values, label='Agent 1 Kp')
-plt.plot(iterations, agent2.kp_values, label='Agent 2 Kp')
+plt.plot(iterations,agent1.opt.y, label='Agent 1 Kp')
+plt.plot(iterations,agent2.opt.y, label='Agent 2 Kp')
 plt.xlabel('Iteration')
-plt.ylabel('Kp')
+plt.ylabel('Error') 
 plt.legend()
-plt.title('Kp values over iterations')
+plt.title('Error over iterations')
 plt.grid(True)
 plt.show()
 
-# Plot rewards over iterations
-plt.figure()
-plt.plot(iterations, agent1.rewards, label='Agent 1 Reward')
-plt.plot(iterations, agent2.rewards, label='Agent 2 Reward')
-plt.xlabel('Iteration')
-plt.ylabel('Reward')
-plt.legend()
-plt.title('Rewards over iterations')
-plt.grid(True)
-plt.show()
