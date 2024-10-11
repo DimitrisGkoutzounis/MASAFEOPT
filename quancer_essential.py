@@ -80,12 +80,18 @@ os2 = theta_d - rt_theta2
 
 error12 = rt_theta1 - rt_theta2
 
+#compute error
 
 integral_error1 = np.trapz(os1, rt_t1)
 integral_error2 = np.trapz(os2, rt_t2)
 integral_error12 = np.trapz(error12, rt_t1)
 
 
+
+
+
+
+################### PLOTTING ####################
 
 plt.figure(1)
 plt.plot(rt_t1, rt_theta1, label='Agent-1')
