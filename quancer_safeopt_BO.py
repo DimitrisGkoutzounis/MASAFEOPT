@@ -234,8 +234,10 @@ def run_experiment(kp1, kp2):
     rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
     rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
     
+    
     reward, os1 , os2 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
+    plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2)
 
     return reward,os1, os2
 
