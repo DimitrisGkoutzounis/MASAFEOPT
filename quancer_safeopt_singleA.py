@@ -180,7 +180,7 @@ class Agent:
         self.rewards.append(y_meas)
 
 # Kp bounds
-kp_bounds = (0.01, 100)
+kp_bounds = (0.01, 10)
 
 agent1 = Agent(1, kp_bounds, kp1_0, reward_0)
 
@@ -212,7 +212,7 @@ def run_experiment(kp1):
     return reward,os1
 
 
-N = 10  # Number of iterations
+N = 20  # Number of iterations
 
 # Bayesian Optimization
 for iteration in range(N):

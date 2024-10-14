@@ -160,40 +160,43 @@ class Agent:
         self.bounds = bounds
         self.safe_point = safe_point
 
-        self.x0 = np.array([[safe_point]])
-        self.y0 = np.array([[initial_reward]]) 
+        self.x0 = np.asarray([safe_point])
+        print("x0:", self.x0)
+        initial_reward = 1/ initial_reward
+        self.y0 = np.asarray([[initial_reward]]) 
 
         self.kernel = GPy.kern.RBF(input_dim=len(bounds),ARD=True)
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, -np.inf, beta=5,threshold=0.2)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, [-np.inf,-np.inf], beta=5,threshold=0.2)
 
         self.kp_values = []
         self.rewards = []
 
     def optimize(self):
         x_next = self.opt.optimize()
+        print(x_next)
         return x_next
 
     def update(self, x_next, y_meas):
         self.opt.add_new_data_point(x_next, y_meas)
+        y_meas = 1 / y_meas
         self.kp_values.append(x_next)
-        print("Kp values: ", self.kp_values)
         self.rewards.append(y_meas)
 
 # Kp bounds
-kp_bounds = [(0.01, 10), (0.01, 2)]
+kp_bounds = [(0.01, 10), (0.01, 0.5)]
 
 agent1 = Agent(1, kp_bounds, x0, reward_0)
+
+wait = input("Press Enter to continue...")
 
 # Initial Values
 print("Initial input: ", agent1.opt.x)
 print("Intital output:", agent1.opt.y)
 
-plt.figure(1)
 agent1.opt.plot(100)
-plt.show()
 
 # Quancer Experiment
 def run_experiment(kp1,kd1):
@@ -211,17 +214,16 @@ def run_experiment(kp1,kd1):
         
     reward, os1 = compute_reward(theta_d,rt_theta1,rt_t1)
 
-    plot_data(rt_t1, rt_theta1, os1)
-    agent1.opt.plot(100)
-    plt.show()
+    # plot_data(rt_t1, rt_theta1, os1)
 
     return reward,os1
 
 
-N = 10  # Number of iterations
+N = 50  # Number of iterations
 
 # Bayesian Optimization
-for iteration in range(N):
+for iteration in range(N+1):
+
     # Get next Kp values from agents
     K_next = agent1.optimize()
     
@@ -232,12 +234,16 @@ for iteration in range(N):
     y,_ = run_experiment(K_next[0],K_next[1])
 
     print(f"Reward: {y}")
+
     
-    wait = input("Press Enter to continue...")
+    # wait = input("Press Enter to continue...")
 
     # Update agents with observations
     
     agent1.update(K_next, y)
+
+    # agent1.opt.plot(100)
+    # plt.show()
     
     
 print("========= EXPERIMENT COMPLETE =========")
@@ -246,7 +252,7 @@ print("========= EXPERIMENT COMPLETE =========")
 iterations = range(len(agent1.kp_values))
 
 plt.figure(3)
-
+y = agent1.opt.y
 plt.plot(iterations,agent1.opt.y, label='Agent 1 Kp')
 plt.xlabel('Iteration')
 plt.ylabel('Error') 
