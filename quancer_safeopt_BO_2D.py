@@ -61,15 +61,15 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     os1 = np.abs(theta_d - rt_theta1)
     os2 = np.abs(theta_d - rt_theta2)
     # Compute error between the two agents
-    error12 = rt_theta1 - rt_theta2
+    error12 = np.abs(rt_theta1 - rt_theta2)
 
     # Compute integral of errors
     integral_os1 = np.trapz(os1, rt_t1)
     integral_os2 = np.trapz(os2, rt_t2)
-    total_os = 1*integral_os1 + 1*integral_os2
+    total_os = 0.5*integral_os1 + 0.5*integral_os2
     integral_error12 = np.trapz(error12, rt_t1)
-    total_error = total_os
-    total_error = 1 / total_error
+    total_error = total_os + integral_error12
+    total_error = 1 / total_error 
     
     os1 = 1 / integral_os1
     os2 = 1 / integral_os2
@@ -121,7 +121,7 @@ subprocess.call(sys2dl, shell=True)
 kp1_0 = 5
 kd1_0 = 0.2
 
-kp2_0 = 1
+kp2_0 = 4
 kd2_0 = 0.5
 
 x0_1 = (kp1_0,kd1_0)
@@ -166,6 +166,8 @@ rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
 reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
 print(f'Initial reward: {reward_0}')
+print(f"Initial error1: ",os1_0)
+print(f"Initial error2: ",os2_0)
 
 wait = input("Press Enter to start Bayesian Optimization...")
 
@@ -188,7 +190,7 @@ class Agent:
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.3, beta=5,threshold=0.1)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.25, beta=4,threshold=0.05)
 
         self.kp_values = []
         self.rewards = []
@@ -245,7 +247,7 @@ for iteration in range(N):
     print(f"Iteration {iteration}, Agent 1:  -Kp {K1_next[0]} -Kd {K1_next[1]}, Agent 2: -Kp: {K2_next[0]} -Kd {K2_next[1]}")
 
     # Run the experiment with kp1_next and kp2_next
-    y,_,_ = run_experiment(K1_next[0],K1_next[1],K2_next[0],K2_next[1])
+    y,os1,os2 = run_experiment(K1_next[0],K1_next[1],K2_next[0],K2_next[1])
 
     print(f"Reward: {y}")
     
@@ -258,7 +260,7 @@ for iteration in range(N):
 print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
-iterations = np.arange(1, N+1)
+iterations = np.arange(0, N+1)
 
 plt.figure(2)
 plt.plot(iterations.flatten(),agent1.opt.y.flatten(), label='Agent 1 Kp')
@@ -283,4 +285,7 @@ plt.xlabel('Kp2')
 plt.ylabel('Kd2')
 
 plt.show()
+
+print(agent1.opt.get_maximum)
+print(agent2.opt.get_maximum)
 
