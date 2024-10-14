@@ -69,6 +69,7 @@ def compute_reward(theta_d, rt_theta1, rt_t1):
     integral_os1 = np.trapz(os1, rt_t1)
     total_os = integral_os1
     total_error = total_os
+    total_error = 1 / total_error
     
     return total_error,os1
        
@@ -109,7 +110,7 @@ subprocess.call(sys1dl, shell=True)
 # Initial safepoint values.
 
 
-kp1_0 = 1
+kp1_0 = 5
 kd1_0 = 0.2
 
 x0 = (kp1_0,kd1_0)
@@ -162,14 +163,13 @@ class Agent:
 
         self.x0 = np.asarray([safe_point])
         print("x0:", self.x0)
-        initial_reward = 1/ initial_reward
         self.y0 = np.asarray([[initial_reward]]) 
 
         self.kernel = GPy.kern.RBF(input_dim=len(bounds),ARD=True)
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, [-np.inf,-np.inf], beta=5,threshold=0.2)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.3, beta=5,threshold=0.1)
 
         self.kp_values = []
         self.rewards = []
@@ -181,12 +181,11 @@ class Agent:
 
     def update(self, x_next, y_meas):
         self.opt.add_new_data_point(x_next, y_meas)
-        y_meas = 1 / y_meas
         self.kp_values.append(x_next)
         self.rewards.append(y_meas)
 
 # Kp bounds
-kp_bounds = [(0.01, 10), (0.01, 0.5)]
+kp_bounds = [(0.01, 10), (0.01, 1)]
 
 agent1 = Agent(1, kp_bounds, x0, reward_0)
 
@@ -195,8 +194,6 @@ wait = input("Press Enter to continue...")
 # Initial Values
 print("Initial input: ", agent1.opt.x)
 print("Intital output:", agent1.opt.y)
-
-agent1.opt.plot(100)
 
 # Quancer Experiment
 def run_experiment(kp1,kd1):
@@ -219,10 +216,10 @@ def run_experiment(kp1,kd1):
     return reward,os1
 
 
-N = 10  # Number of iterations
+N = 50  # Number of iterations
 
 # Bayesian Optimization
-for iteration in range(N+1):
+for iteration in range(N):
 
     # Get next Kp values from agents
     K_next = agent1.optimize()
@@ -252,13 +249,15 @@ print("========= EXPERIMENT COMPLETE =========")
 iterations = np.arange(0,N+1)
 
 
-plt.figure(3)
+plt.figure(2)
 y = agent1.opt.y
-plt.plot(iterations,agent1.opt.y, label='Agent 1 Kp')
+plt.plot(iterations.flatten(),agent1.opt.y.flatten(), label='Agent 1 Kp')
 plt.xlabel('Iteration')
 plt.ylabel('Error') 
 plt.legend()
 plt.title('Error over iterations')
 plt.grid(True)
+
+agent1.opt.plot(100)
 plt.show()
 
