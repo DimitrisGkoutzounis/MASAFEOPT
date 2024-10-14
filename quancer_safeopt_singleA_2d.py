@@ -219,7 +219,7 @@ def run_experiment(kp1,kd1):
     return reward,os1
 
 
-N = 50  # Number of iterations
+N = 10  # Number of iterations
 
 # Bayesian Optimization
 for iteration in range(N+1):
@@ -249,7 +249,8 @@ for iteration in range(N+1):
 print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
-iterations = range(len(agent1.kp_values))
+iterations = np.arange(0,N+1)
+
 
 plt.figure(3)
 y = agent1.opt.y
