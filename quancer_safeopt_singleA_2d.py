@@ -12,7 +12,7 @@ import numpy as np
 import safeopt
 import GPy
 
-################ PHASE 1 ################
+################ PHASE-1 | SAFE EXPERIMENT ################
 
 def sent_command(target_uri, modelName, gain_arg, std_args):
     """
@@ -153,7 +153,8 @@ print(f'Initial reward: {reward_0}')
 # plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
 wait = input("Press Enter to continue...")
 
-# =================== Bayesian Optimization ===================
+
+# =================== PHASE-2 | Bayesian Optimization ===================
 
 class Agent:
     def __init__(self, id, bounds, safe_point,initial_reward):
@@ -162,7 +163,6 @@ class Agent:
         self.safe_point = safe_point
 
         self.x0 = np.asarray([safe_point])
-        print("x0:", self.x0)
         self.y0 = np.asarray([[initial_reward]]) 
 
         self.kernel = GPy.kern.RBF(input_dim=len(bounds),ARD=True)

@@ -27,8 +27,6 @@ def retrieve_data(target_uri, modelName, gain_arg, std_args,agent):
     subprocess.call(sys_get, shell=True)
     shutil.copyfile('servoPDF.mat', f'servoPDF-{agent}.mat')
 
-    # shutil.copyfile('servoPDF.mat', 'servoPDF-2.mat')
-
 
     
 def load_agent_data(filename):
@@ -71,6 +69,10 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     total_os = 1*integral_os1 + 1*integral_os2
     integral_error12 = np.trapz(error12, rt_t1)
     total_error = total_os
+    total_error = 1 / total_error
+    
+    os1 = 1 / integral_os1
+    os2 = 1 / integral_os2
     
     return total_error,os1,os2
        
@@ -116,12 +118,14 @@ subprocess.call(sys2dl, shell=True)
 # Initial safepoint values.
 
 
-kp1_0 = 10
-kd1_0 = 0.02
+kp1_0 = 5
+kd1_0 = 0.2
 
 kp2_0 = 1
 kd2_0 = 0.5
 
+x0_1 = (kp1_0,kd1_0)
+x0_2 = (kp2_0,kd2_0)
 
 #delay difference between the two agents
 td1 = 0.045
@@ -148,27 +152,22 @@ sent_command(target_uri_2, modelName, gain_arg2, std_args)
 # wait for the experiment to finish
 # this should be replaced with a more robust method, where the script waits for the experiment to finish
 # Possibly by checking the port for incoming data
-time.sleep(7)
+time.sleep(6.5)
 
-
-#retrieve data from Agent 1
+#retrieve data from Agents
 retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
-retrieve_data(target_uri_1, modelName, gain_arg1, std_args,2)
+retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
 
-
-#retrieve data from Agent 2
-# retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
-
-# Load data for agent 1
+# Load data from Agents
 rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
-
-#load data for agent 2
 rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
 
 #compute initial safe reward
 reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
 print(f'Initial reward: {reward_0}')
+
+wait = input("Press Enter to start Bayesian Optimization...")
 
 # plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
 # exit(0)
@@ -179,55 +178,50 @@ print(f'Initial reward: {reward_0}')
 class Agent:
     def __init__(self, id, bounds, safe_point,initial_reward):
         self.id = id
-        self.bounds = [bounds]
+        self.bounds = bounds
         self.safe_point = safe_point
 
-        self.x0 = np.array([[safe_point]])
-        self.y0 = np.array([[initial_reward]]) 
+        self.x0 = np.asarray([safe_point])
+        self.y0 = np.asarray([[initial_reward]]) 
 
-        self.kernel = GPy.kern.RBF(1)
+        self.kernel = GPy.kern.RBF(input_dim=len(bounds),ARD=True)
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, -np.inf, beta=4,threshold=0.2)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.3, beta=5,threshold=0.1)
 
-        self.kp_values = [safe_point]
+        self.kp_values = []
         self.rewards = []
 
     def optimize(self):
         x_next = self.opt.optimize()
-        print(x_next)
         return x_next
 
     def update(self, x_next, y_meas):
         self.opt.add_new_data_point(x_next, y_meas)
-        self.kp_values.append(x_next[0])
+        
+        self.kp_values.append(x_next)
         self.rewards.append(y_meas)
 
 # Kp bounds
-kp_bounds = (0.01, 400)
+K_bounds = [(0.01, 10), (0.01, 1)]
 
-agent1 = Agent(1, kp_bounds, kp1_0,reward_0)
-agent2 = Agent(2, kp_bounds, kp2_0,reward_0)
+agent1 = Agent(1, K_bounds, x0_1,reward_0)
+agent2 = Agent(2, K_bounds, x0_2,reward_0)
 
 # Quancer Experiment
-def run_experiment(kp1, kp2):
-    # Build the commands using kp1 and kp2
-    kp1_value = kp1[0]  # Extract value from array
-    kp2_value = kp2[0]
-
-    # set gain arguments
-    gain_arg1 = f' -Kp {kp1_value:.4f} -Kd {kd1_0:.4f}'
-    gain_arg2 = f' -Kp {kp2_value:.4f} -Kd {kd2_0:.4f}'
-
+def run_experiment(kp1,kd1,kp2,kd2):
     
+    # set gain arguments
+    gain_arg1 = f' -Kp {kp1} -Kd {kd1}'
+    gain_arg2 = f' -Kp {kp2} -Kd {kd2}'
+
     sent_command(target_uri_1, modelName, gain_arg1, std_args)
     sent_command(target_uri_2, modelName, gain_arg2, std_args)
 
     # await experiment completion
     time.sleep(6.5)
 
-    
     retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
     retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
 
@@ -239,58 +233,54 @@ def run_experiment(kp1, kp2):
     return reward,os1, os2
 
 
-N = 10  # Number of iterations
+N = 50  # Number of iterations
 
 # Bayesian Optimization
 for iteration in range(N):
+    
     # Get next Kp values from agents
-    kp1_next = agent1.optimize()
-    kp2_next = agent2.optimize()
+    K1_next = agent1.optimize()
+    K2_next = agent2.optimize()
 
-    print(f"Iteration {iteration+1}, Agent 1 Kp: {kp1_next[0]:.4f}, Agent 2 Kp: {kp2_next[0]:.4f}")
+    print(f"Iteration {iteration}, Agent 1:  -Kp {K1_next[0]} -Kd {K1_next[1]}, Agent 2: -Kp: {K2_next[0]} -Kd {K2_next[1]}")
 
     # Run the experiment with kp1_next and kp2_next
-    y,_,_ = run_experiment(kp1_next, kp2_next)
+    y,_,_ = run_experiment(K1_next[0],K1_next[1],K2_next[0],K2_next[1])
 
     print(f"Reward: {y}")
     
-    print(agent1.opt.x)
-    print(agent2.opt.x)
-
-    print(agent1.opt.get_maximum())
-    print(agent2.opt.get_maximum())
-
-
     # Update agents with observations
     
-    agent1.update(kp1_next, y)
-    agent2.update(kp2_next, y)
+    agent1.update(K1_next, y)
+    agent2.update(K2_next, y)
     
     
 print("========= EXPERIMENT COMPLETE =========")
 
 # Plot Kp values over iterations
-iterations = range(len(agent1.kp_values))
+iterations = np.arange(1, N+1)
 
-
-
-plt.figure()
-plt.plot(iterations, agent1.kp_values, label='Agent 1 Kp')
-plt.plot(iterations, agent2.kp_values, label='Agent 2 Kp')
+plt.figure(2)
+plt.plot(iterations.flatten(),agent1.opt.y.flatten(), label='Agent 1 Kp')
+plt.plot(iterations.flatten(),agent2.opt.y.flatten(), label='Agent 2 Kp')
 plt.xlabel('Iteration')
-plt.ylabel('Kp')
+plt.ylabel('Reward') 
 plt.legend()
-plt.title('Kp values over iterations')
+plt.title('Reward over iterations')
 plt.grid(True)
+
+
+agent1.opt.plot(100)
+plt.title('Agent 1')
+plt.xlabel('Kp1')
+plt.ylabel('Kd1')
+
 plt.show()
 
-# Plot rewards over iterations
-plt.figure()
-plt.plot(iterations-1, agent1.rewards, label='Agent 1 Reward')
-plt.plot(iterations-1, agent2.rewards, label='Agent 2 Reward')
-plt.xlabel('Iteration')
-plt.ylabel('Reward')
-plt.legend()
-plt.title('Rewards over iterations')
-plt.grid(True)
+agent2.opt.plot(100)
+plt.title('Agent 2')
+plt.xlabel('Kp2')
+plt.ylabel('Kd2')
+
 plt.show()
+
