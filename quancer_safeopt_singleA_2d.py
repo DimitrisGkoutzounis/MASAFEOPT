@@ -135,7 +135,7 @@ sent_command(target_uri_1, modelName, gain_arg1, std_args)
 # wait for the experiment to finish
 # this should be replaced with a more robust method, where the script waits for the experiment to finish
 # Possibly by checking the port for incoming data
-time.sleep(7)
+time.sleep(6.5)
 
 
 #retrieve data from Agent 1
@@ -150,7 +150,7 @@ reward_0, os1_0 = compute_reward(theta_d,rt_theta1,rt_t1)
 print(f'Initial reward: {reward_0}')
 
 # plot_data(rt_t1, rt_theta1, os1_0, rt_t2, rt_theta2, os2_0)
-exit(0)
+wait = input("Press Enter to continue...")
 
 # =================== Bayesian Optimization ===================
 
@@ -179,6 +179,7 @@ class Agent:
     def update(self, x_next, y_meas):
         self.opt.add_new_data_point(x_next, y_meas)
         self.kp_values.append(x_next)
+        print("Kp values: ", self.kp_values)
         self.rewards.append(y_meas)
 
 # Kp bounds
@@ -188,14 +189,17 @@ agent1 = Agent(1, kp_bounds, x0, reward_0)
 
 # Initial Values
 print("Initial input: ", agent1.opt.x)
-print("Intital output:",agent1.opt.y)
+print("Intital output:", agent1.opt.y)
+
+plt.figure(1)
+agent1.opt.plot(100)
+plt.show()
 
 # Quancer Experiment
-def run_experiment(kp1):
-    kp1= kp1[0]
+def run_experiment(kp1,kd1):
     
     # set gain arguments
-    gain_arg1 = f' -Kp {kp1} -Kd {kd1_0}'
+    gain_arg1 = f' -Kp {kp1} -Kd {kd1}'
     
     sent_command(target_uri_1, modelName, gain_arg1, std_args)
 
@@ -219,18 +223,21 @@ N = 10  # Number of iterations
 # Bayesian Optimization
 for iteration in range(N):
     # Get next Kp values from agents
-    kp1_next = agent1.optimize()
+    K_next = agent1.optimize()
+    
+    print("K_next: ", K_next)
 
-    print(f"Iteration {iteration}, Agent 1 Kp: {kp1_next}")
+    print(f"Iteration {iteration}, Agent 1 Kp: {K_next[0]} Kd: {K_next[1]}")
 
-    y,_ = run_experiment(kp1_next)
+    y,_ = run_experiment(K_next[0],K_next[1])
 
     print(f"Reward: {y}")
     
+    wait = input("Press Enter to continue...")
 
     # Update agents with observations
     
-    agent1.update(kp1_next, y)
+    agent1.update(K_next, y)
     
     
 print("========= EXPERIMENT COMPLETE =========")
