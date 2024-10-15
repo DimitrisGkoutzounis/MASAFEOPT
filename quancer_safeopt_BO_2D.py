@@ -68,7 +68,7 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     integral_os2 = np.trapz(os2, rt_t2)
     total_os = 0.5*integral_os1 + 0.5*integral_os2
     integral_error12 = np.trapz(error12, rt_t1)
-    total_error = total_os + integral_error12
+    total_error = total_os + 3* integral_error12
     total_error = 1 / total_error 
     
     os1 = 1 / integral_os1
@@ -152,7 +152,7 @@ sent_command(target_uri_2, modelName, gain_arg2, std_args)
 # wait for the experiment to finish
 # this should be replaced with a more robust method, where the script waits for the experiment to finish
 # Possibly by checking the port for incoming data
-time.sleep(6.5)
+time.sleep(7)
 
 #retrieve data from Agents
 retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
@@ -190,7 +190,7 @@ class Agent:
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.25, beta=4,threshold=0.05)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.1, beta=4,threshold=0.05)
 
         self.kp_values = []
         self.rewards = []
@@ -222,7 +222,7 @@ def run_experiment(kp1,kd1,kp2,kd2):
     sent_command(target_uri_2, modelName, gain_arg2, std_args)
 
     # await experiment completion
-    time.sleep(6.5)
+    time.sleep(7)
 
     retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
     retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
@@ -235,7 +235,7 @@ def run_experiment(kp1,kd1,kp2,kd2):
     return reward,os1, os2
 
 
-N = 50  # Number of iterations
+N = 100  # Number of iterations
 
 # Bayesian Optimization
 for iteration in range(N):
