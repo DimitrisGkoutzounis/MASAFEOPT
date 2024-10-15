@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 import numpy as np
-import pickle
+import csv
 import os
+import GPy
+import safeopt
 
 def load_agent_data(filename):
     """
@@ -19,9 +21,12 @@ def plot_iteration(iteration_number):
     if not os.path.exists('plots'):
         os.makedirs('plots')
 
+    data_dir = 'data'
+    agent_data_dir = 'agent_data'
+
     # Load data
-    rt_t1, rt_theta1, theta_d = load_agent_data(f'servoPDF-1_{iteration_number}.mat')
-    rt_t2, rt_theta2, _ = load_agent_data(f'servoPDF-2_{iteration_number}.mat')
+    rt_t1, rt_theta1, theta_d = load_agent_data(f'{data_dir}/servoPDF-1_{iteration_number}.mat')
+    rt_t2, rt_theta2, _ = load_agent_data(f'{data_dir}/servoPDF-2_{iteration_number}.mat')
     
     # Plot state response
     plt.figure()
@@ -36,54 +41,83 @@ def plot_iteration(iteration_number):
     plt.savefig(f'plots/state_response_iteration_{iteration_number}.png')
     plt.close()
     
-    # Load agent opt objects
-    with open(f'agent1_opt_{iteration_number}.pkl', 'rb') as f:
-        agent1_opt = pickle.load(f)
-    with open(f'agent2_opt_{iteration_number}.pkl', 'rb') as f:
-        agent2_opt = pickle.load(f)
-    
-    # Get current maximum
-    x_max_1, y_max_1 = agent1_opt.get_maximum()
-    x_max_2, y_max_2 = agent2_opt.get_maximum()
-    
-    # Plot agent1
-    plt.figure()
-    agent1_opt.plot(100)
-    plt.scatter(x_max_1[0], x_max_1[1], marker='*', color='red', s=100, label='Current Maximum')
-    plt.title(f'Agent 1 - Iteration {iteration_number}')
-    plt.xlabel('Kp1')
-    plt.ylabel('Kd1')
-    plt.legend()
-    plt.savefig(f'plots/agent1_plot_iteration_{iteration_number}.png')
-    plt.close()
-    
-    # Plot agent2
-    plt.figure()
-    agent2_opt.plot(100)
-    plt.scatter(x_max_2[0], x_max_2[1], marker='*', color='red', s=100, label='Current Maximum')
-    plt.title(f'Agent 2 - Iteration {iteration_number}')
-    plt.xlabel('Kp2')
-    plt.ylabel('Kd2')
-    plt.legend()
-    plt.savefig(f'plots/agent2_plot_iteration_{iteration_number}.png')
-    plt.close()
-    
-    # Load rewards
-    rewards = []
-    for i in range(1, iteration_number + 1):
-        # Assuming rewards are saved after each iteration
-        reward = np.load(f'rewards_{i}.npy')[-1]  # Get the last reward in each file
-        rewards.append(reward)
-    iterations = np.arange(1, len(rewards) + 1)
+    # Load agent data from text files
+    agent1_iterations = []
+    agent1_kp = []
+    agent1_kd = []
+    agent1_rewards = []
+
+    agent2_iterations = []
+    agent2_kp = []
+    agent2_kd = []
+    agent2_rewards = []
+
+    with open(f'{agent_data_dir}/agent1_data.txt', 'r') as f1:
+        reader = csv.reader(f1)
+        next(reader)  # Skip header
+        for row in reader:
+            iter_num = int(row[0])
+            if iter_num <= iteration_number:
+                agent1_iterations.append(iter_num)
+                agent1_kp.append(float(row[1]))
+                agent1_kd.append(float(row[2]))
+                agent1_rewards.append(float(row[3]))
+
+    with open(f'{agent_data_dir}/agent2_data.txt', 'r') as f2:
+        reader = csv.reader(f2)
+        next(reader)  # Skip header
+        for row in reader:
+            iter_num = int(row[0])
+            if iter_num <= iteration_number:
+                agent2_iterations.append(iter_num)
+                agent2_kp.append(float(row[1]))
+                agent2_kd.append(float(row[2]))
+                agent2_rewards.append(float(row[3]))
     
     # Plot reward over iterations
     plt.figure()
-    plt.plot(iterations, rewards, label='Reward')
+    plt.plot(agent1_iterations, agent1_rewards, label='Agent 1 Reward')
+    plt.plot(agent2_iterations, agent2_rewards, label='Agent 2 Reward')
     plt.xlabel('Iteration')
     plt.ylabel('Reward')
     plt.title('Reward over Iterations')
     plt.legend()
     plt.savefig(f'plots/reward_plot_iteration_{iteration_number}.png')
+    plt.close()
+
+    # Reconstruct GP models and plot if desired
+    # Since we have the data, we can reconstruct the GP models
+    reconstruct_and_plot_gp(agent1_kp, agent1_kd, agent1_rewards, 'Agent 1', iteration_number)
+    reconstruct_and_plot_gp(agent2_kp, agent2_kd, agent2_rewards, 'Agent 2', iteration_number)
+
+def reconstruct_and_plot_gp(kp_values, kd_values, rewards, agent_name, iteration_number):
+    # Prepare data
+    X = np.array(list(zip(kp_values, kd_values)))
+    Y = np.array(rewards).reshape(-1, 1)
+
+    # Define bounds
+    K_bounds = [(0.01, 10), (0.01, 1)]  # Same as in the main script
+
+    # Reconstruct GP model
+    kernel = GPy.kern.RBF(input_dim=2, ARD=True)
+    gp = GPy.models.GPRegression(X, Y, kernel, noise_var=0.05**2)
+
+    # Create SafeOpt object
+    parameter_set = safeopt.linearly_spaced_combinations(K_bounds, 100)
+    opt = safeopt.SafeOpt(gp, parameter_set, 0.1, beta=4, threshold=0.05)
+
+    # Get current maximum
+    x_max, y_max = opt.get_maximum()
+
+    # Plot GP model
+    plt.figure()
+    opt.plot(100)
+    plt.scatter(x_max[0], x_max[1], marker='*', color='red', s=100, label='Current Maximum')
+    plt.title(f'{agent_name} - Iteration {iteration_number}')
+    plt.xlabel('Kp')
+    plt.ylabel('Kd')
+    plt.legend()
+    plt.savefig(f'plots/{agent_name.lower().replace(" ", "_")}_plot_iteration_{iteration_number}.png')
     plt.close()
 
 # Example usage
