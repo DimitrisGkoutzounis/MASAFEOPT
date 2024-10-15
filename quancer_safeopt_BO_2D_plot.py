@@ -243,7 +243,7 @@ def run_experiment(kp1, kd1, kp2, kd2, iteration):
 
     return reward, os1, os2
 
-N = 100  # Number of iterations
+N = 50  # Number of iterations
 
 # Initialize data files
 agent_data_dir = 'agent_data'
@@ -285,7 +285,7 @@ for iteration in range(1, N+1):
     
     plt.figure()
     agent1.opt.plot(100)
-    plt.scatter(x_max_1[0], x_max_1[1], maker="*", color='red', s=100, label='Current Maximum')
+    plt.scatter(x_max_1[0], x_max_1[1], marker="*", color='red', s=100, label='Current Maximum')
     plt.title(f'Agent 1 - Iteration {iteration}')
     plt.xlabel('Kp')
     plt.ylabel('Kd')
@@ -295,7 +295,7 @@ for iteration in range(1, N+1):
     
     plt.figure()
     agent2.opt.plot(100)
-    plt.scatter(x_max_2[0], x_max_2[1], maker="*", color='red', s=100, label='Current Maximum')
+    plt.scatter(x_max_2[0], x_max_2[1], marker="*", color='red', s=100, label='Current Maximum')
     plt.title(f'Agent 2 - Iteration {iteration}')
     plt.xlabel('Kp')
     plt.ylabel('Kd')
