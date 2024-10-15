@@ -4,6 +4,8 @@ import shutil
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 import numpy as np
+import os  # For directory operations
+import pickle  # For saving agent objects
 
 import safeopt
 import GPy
@@ -18,14 +20,14 @@ def sent_command(target_uri, modelName, gain_arg, std_args):
     subprocess.call(sys_run, shell=True)
     
 
-def retrieve_data(target_uri, modelName, gain_arg, std_args,agent):
+def retrieve_data(target_uri, modelName, gain_arg, std_args, agent, iteration):
     """
     Retrieve data from the target.
     """
     sys_get = f'quarc_run -u -t {target_uri} {modelName}.rt-linux_rt_armv7{gain_arg}{std_args}'
     print(sys_get)
     subprocess.call(sys_get, shell=True)
-    shutil.copyfile('servoPDF.mat', f'servoPDF-{agent}.mat')
+    shutil.copyfile('servoPDF.mat', f'servoPDF-{agent}_{iteration}.mat')
 
 
     
@@ -100,6 +102,10 @@ def plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2):
     plt.show()
 
 
+# Create a directory to save plots
+if not os.path.exists('plots'):
+    os.makedirs('plots')
+
 modelName = 'servoPDF'
 
 target_uri_1 = 'tcpip://172.22.11.2:17000?keep_alive=1'
@@ -155,12 +161,12 @@ sent_command(target_uri_2, modelName, gain_arg2, std_args)
 time.sleep(7)
 
 #retrieve data from Agents
-retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
-retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
+retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1,0)
+retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2,0)
 
 # Load data from Agents
-rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
-rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
+rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1_0.mat')
+rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2_0.mat')
 
 #compute initial safe reward
 reward_0, os1_0 , os2_0 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
@@ -212,7 +218,7 @@ agent1 = Agent(1, K_bounds, x0_1,reward_0)
 agent2 = Agent(2, K_bounds, x0_2,reward_0)
 
 # Quancer Experiment
-def run_experiment(kp1,kd1,kp2,kd2):
+def run_experiment(kp1,kd1,kp2,kd2, iteration):
     
     # set gain arguments
     gain_arg1 = f' -Kp {kp1} -Kd {kd1}'
@@ -224,21 +230,21 @@ def run_experiment(kp1,kd1,kp2,kd2):
     # await experiment completion
     time.sleep(7)
 
-    retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1)
-    retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2)
+    retrieve_data(target_uri_1, modelName, gain_arg1, std_args,1, iteration)
+    retrieve_data(target_uri_2, modelName, gain_arg2, std_args,2, iteration)
 
-    rt_t1, rt_theta1,theta_d = load_agent_data('servoPDF-1.mat')
-    rt_t2, rt_theta2, _ = load_agent_data('servoPDF-2.mat')
+    rt_t1, rt_theta1,theta_d = load_agent_data(f'servoPDF-1_{iteration}.mat')
+    rt_t2, rt_theta2, _ = load_agent_data(f'servoPDF-2_{iteration}.mat')
     
     reward, os1 , os2 = compute_reward(theta_d,rt_theta1,rt_theta2,rt_t1,rt_t2)
 
     return reward,os1, os2
 
 
-N = 100  # Number of iterations
+N = 3  # Number of iterations
 
 # Bayesian Optimization
-for iteration in range(N):
+for iteration in range(1, N+1):
     
     # Get next Kp values from agents
     K1_next = agent1.optimize()
@@ -247,7 +253,7 @@ for iteration in range(N):
     print(f"Iteration {iteration}, Agent 1:  -Kp {K1_next[0]} -Kd {K1_next[1]}, Agent 2: -Kp: {K2_next[0]} -Kd {K2_next[1]}")
 
     # Run the experiment with kp1_next and kp2_next
-    y,os1,os2 = run_experiment(K1_next[0],K1_next[1],K2_next[0],K2_next[1])
+    y,os1,os2 = run_experiment(K1_next[0],K1_next[1],K2_next[0],K2_next[1], iteration)
 
     print(f"Reward: {y}")
     
@@ -256,6 +262,46 @@ for iteration in range(N):
     agent1.update(K1_next, y)
     agent2.update(K2_next, y)
     
+    # Save agent's data
+    np.save(f'agent1_x_{iteration}.npy', agent1.opt.x)
+    np.save(f'agent1_y_{iteration}.npy', agent1.opt.y)
+    np.save(f'agent2_x_{iteration}.npy', agent2.opt.x)
+    np.save(f'agent2_y_{iteration}.npy', agent2.opt.y)
+
+    # Save rewards
+    np.save(f'rewards_{iteration}.npy', agent1.rewards)  # Rewards are the same for both agents
+
+    # Get current maximum
+    x_max_1, y_max_1 = agent1.opt.get_maximum()
+    x_max_2, y_max_2 = agent2.opt.get_maximum()
+
+    # Plot and save agent1
+    plt.figure()
+    agent1.opt.plot(100)
+    plt.scatter(x_max_1[0], x_max_1[1], marker='*', color='red', s=100, label='Current Maximum')
+    plt.title(f'Agent 1 - Iteration {iteration}')
+    plt.xlabel('Kp1')
+    plt.ylabel('Kd1')
+    plt.legend()
+    plt.savefig(f'plots/agent1_iteration_{iteration}.png')
+    plt.close()
+
+    # Plot and save agent2
+    plt.figure()
+    agent2.opt.plot(100)
+    plt.scatter(x_max_2[0], x_max_2[1], marker='*', color='red', s=100, label='Current Maximum')
+    plt.title(f'Agent 2 - Iteration {iteration}')
+    plt.xlabel('Kp2')
+    plt.ylabel('Kd2')
+    plt.legend()
+    plt.savefig(f'plots/agent2_iteration_{iteration}.png')
+    plt.close()
+
+    # Save agent's opt object using pickle
+    with open(f'agent1_opt_{iteration}.pkl', 'wb') as f:
+        pickle.dump(agent1.opt, f)
+    with open(f'agent2_opt_{iteration}.pkl', 'wb') as f:
+        pickle.dump(agent2.opt, f)
     
 print("========= EXPERIMENT COMPLETE =========")
 
@@ -263,26 +309,100 @@ print("========= EXPERIMENT COMPLETE =========")
 iterations = np.arange(0, N+1)
 
 plt.figure(2)
-plt.plot(iterations.flatten(),agent1.opt.y.flatten(), label='Agent 1 Kp')
-plt.plot(iterations.flatten(),agent2.opt.y.flatten(), label='Agent 2 Kp')
+plt.plot(iterations[1:].flatten(), [reward for reward in agent1.rewards], label='Agent 1 Reward')
+plt.plot(iterations[1:].flatten(), [reward for reward in agent2.rewards], label='Agent 2 Reward')
 plt.xlabel('Iteration')
 plt.ylabel('Reward') 
 plt.legend()
 plt.title('Reward over iterations')
 plt.grid(True)
+plt.savefig('plots/reward_over_iterations.png')
+plt.show()
 
-
+# Final plots for agents
 agent1.opt.plot(100)
+x_max_1, y_max_1 = agent1.opt.get_maximum()
+plt.scatter(x_max_1[0], x_max_1[1], marker='*', color='red', s=100, label='Current Maximum')
 plt.title('Agent 1')
 plt.xlabel('Kp1')
 plt.ylabel('Kd1')
-
+plt.legend()
 plt.show()
 
 agent2.opt.plot(100)
+x_max_2, y_max_2 = agent2.opt.get_maximum()
+plt.scatter(x_max_2[0], x_max_2[1], marker='*', color='red', s=100, label='Current Maximum')
 plt.title('Agent 2')
 plt.xlabel('Kp2')
 plt.ylabel('Kd2')
-
+plt.legend()
 plt.show()
 
+# Function to plot data for a specific iteration
+def plot_iteration(iteration_number):
+    # Load data
+    rt_t1, rt_theta1, theta_d = load_agent_data(f'servoPDF-1_{iteration_number}.mat')
+    rt_t2, rt_theta2, _ = load_agent_data(f'servoPDF-2_{iteration_number}.mat')
+    
+    # Plot state response
+    plt.figure()
+    plt.plot(rt_t1, rt_theta1, label='Agent-1')
+    plt.plot(rt_t2, rt_theta2, label='Agent-2')
+    plt.plot(rt_t1, theta_d, label='Desired Theta', linestyle='--')
+    plt.grid(True)
+    plt.xlabel('t (s)')
+    plt.ylabel('theta')
+    plt.title(f"Theta over time - Iteration {iteration_number}")
+    plt.legend()
+    plt.savefig(f'plots/state_response_iteration_{iteration_number}.png')
+    plt.close()
+    
+    # Load agent opt objects
+    with open(f'agent1_opt_{iteration_number}.pkl', 'rb') as f:
+        agent1_opt = pickle.load(f)
+    with open(f'agent2_opt_{iteration_number}.pkl', 'rb') as f:
+        agent2_opt = pickle.load(f)
+    
+    # Get current maximum
+    x_max_1, y_max_1 = agent1_opt.get_maximum()
+    x_max_2, y_max_2 = agent2_opt.get_maximum()
+    
+    # Plot agent1
+    plt.figure()
+    agent1_opt.plot(100)
+    plt.scatter(x_max_1[0], x_max_1[1], marker='*', color='red', s=100, label='Current Maximum')
+    plt.title(f'Agent 1 - Iteration {iteration_number}')
+    plt.xlabel('Kp1')
+    plt.ylabel('Kd1')
+    plt.legend()
+    plt.savefig(f'plots/agent1_plot_iteration_{iteration_number}.png')
+    plt.close()
+    
+    # Plot agent2
+    plt.figure()
+    agent2_opt.plot(100)
+    plt.scatter(x_max_2[0], x_max_2[1], marker='*', color='red', s=100, label='Current Maximum')
+    plt.title(f'Agent 2 - Iteration {iteration_number}')
+    plt.xlabel('Kp2')
+    plt.ylabel('Kd2')
+    plt.legend()
+    plt.savefig(f'plots/agent2_plot_iteration_{iteration_number}.png')
+    plt.close()
+    
+    # Load rewards
+    rewards = np.load(f'rewards_{iteration_number}.npy')
+    iterations = np.arange(1, len(rewards)+1)
+    
+    # Plot reward over iterations
+    plt.figure()
+    plt.plot(iterations, rewards, label='Reward')
+    plt.xlabel('Iteration')
+    plt.ylabel('Reward')
+    plt.title('Reward over Iterations')
+    plt.legend()
+    plt.savefig(f'plots/reward_plot_iteration_{iteration_number}.png')
+    plt.close()
+
+# Example usage of plot_iteration function
+iteration_to_plot = 3  # Specify the iteration number you want to plot
+plot_iteration(iteration_to_plot)
