@@ -129,7 +129,7 @@ subprocess.call(sys2dl, shell=True)
 # Initial safepoint values.
 
 kp1_0 = 5
-kd1_0 = 0.2
+kd1_0 = 0.7
 
 kp2_0 = 4
 kd2_0 = 0.5
