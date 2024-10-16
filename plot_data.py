@@ -17,7 +17,7 @@ def load_agent_data(filename):
     return rt_t, rt_theta, theta_d
 
 def plot_iteration(iteration_number):
-    # Check if 'plots' directory exists
+    # Check if plots directory exists
     if not os.path.exists('plots'):
         os.makedirs('plots')
 
@@ -86,7 +86,6 @@ def plot_iteration(iteration_number):
     plt.close()
 
     # Reconstruct GP models and plot if desired
-    # Since we have the data, we can reconstruct the GP models
     reconstruct_and_plot_gp(agent1_kp, agent1_kd, agent1_rewards, 'Agent 1', iteration_number)
     reconstruct_and_plot_gp(agent2_kp, agent2_kd, agent2_rewards, 'Agent 2', iteration_number)
 
@@ -120,7 +119,6 @@ def reconstruct_and_plot_gp(kp_values, kd_values, rewards, agent_name, iteration
     plt.savefig(f'plots/{agent_name.lower().replace(" ", "_")}_plot_iteration_{iteration_number}.png')
     plt.close()
 
-# Example usage
 if __name__ == "__main__":
     iteration_to_plot = int(input("Enter iteration number to plot: "))
     plot_iteration(iteration_to_plot)
