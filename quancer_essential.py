@@ -1,3 +1,8 @@
+"""
+Communicates with 2 agents to retrieve data and compute the reward
+"""
+
+
 import subprocess
 import time
 import shutil

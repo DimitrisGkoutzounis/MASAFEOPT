@@ -1,3 +1,12 @@
+"""
+# Version: 1.0
+# Description: This script performs Bayesian Optimization for two agents controlling a servo motor system. 
+# The goal is to find the optimal control gains (Kp and Kd) that maximize a reward function based on tracking performance and minimizing overshoot errors.
+# The script uses a combination of remote commands, data retrieval, reward computation, and optimization over multiple iterations to achieve the best parameter settings for the system.
+
+
+"""
+
 import subprocess
 import time
 import shutil
