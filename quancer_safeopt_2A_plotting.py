@@ -378,16 +378,41 @@ plt.show()
 plot_iteration(best_iteration)
 
 
-x_max_1, y_max_1 = agent1.opt.get_maximum()
-x_max_2, y_max_2 = agent2.opt.get_maximum()
 
-print(f'========== EXECUTING BEST ESTIMATION ====')
 
-y, os1 , os2 = run_experiment(x_max_1[0], x_max_1[1], x_max_2[0], x_max_2[1], np.max(iterations_list) + 1)
+print(f'========== EXECUTING BEST ESTIMATED PARAMETERS ==========')
+# Get the estimated best parameters from the GP models
+x_estimated_1, y_estimated_1 = agent1.opt.get_maximum()
+x_estimated_2, y_estimated_2 = agent2.opt.get_maximum()
 
-print(f"Best Reward: {y}")
 
-# Save the best estimation to the agent_data directory
+# Increment the iteration number for the final experiment
+final_iteration = N + 2
+print(f"Running experiment with estimated best parameters at iteration {final_iteration}")
+
+# Run the experiment with the estimated best parameters
+y_estimated, os1_estimated, os2_estimated = run_experiment(x_estimated_1[0], x_estimated_1[1], x_estimated_2[0], x_estimated_2[1], final_iteration)
+
+
+print(f"Reward: {y_estimated}")
+
+# Update agents with observations from the final experiment
+agent1.update(x_estimated_1, y_estimated)
+agent2.update(x_estimated_2, y_estimated)
+
+with open(f'{agent_data_dir}/agent1_data.txt', 'a', newline='') as f1, open(f'{agent_data_dir}/agent2_data.txt', 'a', newline='') as f2:
+    writer1 = csv.writer(f1)
+    writer2 = csv.writer(f2)
+    writer1.writerow([final_iteration, x_estimated_1[0], x_estimated_1[1], y_estimated])
+    writer2.writerow([final_iteration, x_estimated_2[0], x_estimated_2[1], y_estimated])
+
+with open(f'{agent_data_dir}/rewards.txt', 'a') as f:
+    f.write(f"{final_iteration},{y_estimated}\n")
+
+plot_iteration(final_iteration)
+
+
+
 
 
 
