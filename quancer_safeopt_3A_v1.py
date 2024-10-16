@@ -163,9 +163,9 @@ x0_2 = (kp2_0, kd2_0)
 x0_3 = (kp3_0, kd3_0)  # Added Agent 3
 
 # Delay difference between the agents
-td1 = 0.045
+td1 = 0.09
 td2 = 0.045  # Assuming same delay for Agent 2
-td3 = 0.045  # Added delay for Agent 3
+td3 = 0.001  # Added delay for Agent 3
 
 # Create gain arguments
 gain_arg1 = f' -Kp {kp1_0} -Kd {kd1_0}'
