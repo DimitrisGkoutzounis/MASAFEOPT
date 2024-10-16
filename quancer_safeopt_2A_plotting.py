@@ -239,7 +239,7 @@ def run_experiment(kp1, kd1, kp2, kd2, iteration):
 
     return reward, os1, os2
 
-N = 100  # Number of iterations
+N = 50  # Number of iterations
 
 # Initialize data files
 agent_data_dir = 'agent_data'
@@ -312,8 +312,11 @@ for iteration in range(1, N+1):
     plt.tight_layout()
     plt.savefig(f'plots/agents_iteration_{iteration}.png')
     plt.close()
+    # plt.close('all')
 
-print("========= EXPERIMENT COMPLETE =========")
+print("========= BAYESIAN OPTIMIZATION COMPLETED =========")
+
+print("Plotting reward over iterations...")
 
 # Load rewards from text file to find the best iteration
 rewards = []
@@ -327,11 +330,14 @@ with open(f'{agent_data_dir}/rewards.txt', 'r') as f:
         iterations_list.append(iteration)
         rewards.append(reward)
 
-# Find the iteration with the maximum reward
+# Find the best experimental iteration
+
 max_reward = max(rewards)
 max_reward_index = rewards.index(max_reward)
 best_iteration = iterations_list[max_reward_index]
-print(f'Best iteration: {best_iteration} with reward: {max_reward}')
+print(f'Best Experimental Iteration: {best_iteration} | R - {max_reward}, K1 - {agent1.kp_values[best_iteration]}, K2 - {agent2.kp_values[best_iteration]}')
+
+# Find the estimated best Kp values for the agents
 
 # Plot Kp values over iterations
 iterations = np.arange(0, N+1)
@@ -367,5 +373,22 @@ plt.grid(True)
 plt.savefig('plots/reward_over_iterations.png')
 plt.show()
 
+
 # Call the function to plot the best iteration
 plot_iteration(best_iteration)
+
+
+x_max_1, y_max_1 = agent1.opt.get_maximum()
+x_max_2, y_max_2 = agent2.opt.get_maximum()
+
+print(f'========== EXECUTING BEST ESTIMATION ====')
+
+y, os1 , os2 = run_experiment(x_max_1[0], x_max_1[1], x_max_2[0], x_max_2[1], np.max(iterations_list) + 1)
+
+print(f"Best Reward: {y}")
+
+# Save the best estimation to the agent_data directory
+
+
+
+
