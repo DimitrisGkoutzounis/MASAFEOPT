@@ -162,7 +162,7 @@ kd3_0 = 0.8
 
 x0_1 = (kp1_0, kd1_0)
 x0_2 = (kp2_0, kd2_0)
-x0_3 = (kp3_0, kd3_0)  # Added Agent 3
+x0_3 = (kp3_0, kd3_0) 
 
 # Delay difference between the agents
 td1 = 0.09
@@ -172,25 +172,25 @@ td3 = 0.001  # Added delay for Agent 3
 # Create gain arguments
 gain_arg1 = f' -Kp {kp1_0} -Kd {kd1_0}'
 gain_arg2 = f' -Kp {kp2_0} -Kd {kd2_0}'
-gain_arg3 = f' -Kp {kp3_0} -Kd {kd3_0}'  # Added Agent 3
+gain_arg3 = f' -Kp {kp3_0} -Kd {kd3_0}'  
 
 print(f'Initial gain arguments for Agent 1: {gain_arg1}')
 print(f'Initial gain arguments for Agent 2: {gain_arg2}')
-print(f'Initial gain arguments for Agent 3: {gain_arg3}')  # Added Agent 3
+print(f'Initial gain arguments for Agent 3: {gain_arg3}')  
 
 # Create system command for gain arguments
 sys1run = f'quarc_run -l -t {target_uri_1} {modelName}.rt-linux_rt_armv7{gain_arg1} -td {td1:.5f} {std_args}'
-sys2run = f'quarc_run -l -t {target_uri_2} {modelName}.rt-linux_rt_armv7{gain_arg2} -td {td2:.5f} {std_args}'  # Added delay argument
-sys3run = f'quarc_run -l -t {target_uri_3} {modelName}.rt-linux_rt_armv7{gain_arg3} -td {td3:.5f} {std_args}'  # Added Agent 3
+sys2run = f'quarc_run -l -t {target_uri_2} {modelName}.rt-linux_rt_armv7{gain_arg2} -td {td2:.5f} {std_args}' 
+sys3run = f'quarc_run -l -t {target_uri_3} {modelName}.rt-linux_rt_armv7{gain_arg3} -td {td3:.5f} {std_args}'  
 
 # Run the system commands
 subprocess.call(sys1run, shell=True)
 subprocess.call(sys2run, shell=True)
-subprocess.call(sys3run, shell=True)  # Added Agent 3
+subprocess.call(sys3run, shell=True)  
 
 sent_command(target_uri_1, modelName, gain_arg1, std_args)
 sent_command(target_uri_2, modelName, gain_arg2, std_args)
-sent_command(target_uri_3, modelName, gain_arg3, std_args)  # Added Agent 3
+sent_command(target_uri_3, modelName, gain_arg3, std_args) 
 
 # Wait for the experiment to finish
 time.sleep(7)
@@ -198,12 +198,12 @@ time.sleep(7)
 # Retrieve data from Agents
 retrieve_data(target_uri_1, modelName, gain_arg1, std_args, 1, 0)
 retrieve_data(target_uri_2, modelName, gain_arg2, std_args, 2, 0)
-retrieve_data(target_uri_3, modelName, gain_arg3, std_args, 3, 0)  # Added Agent 3
+retrieve_data(target_uri_3, modelName, gain_arg3, std_args, 3, 0)  
 
 # Load data from Agents
-rt_t1, rt_theta1, theta_d = load_agent_data('data_3A/servoPDF-1_0.mat')  # Changed to 'data_3A'
-rt_t2, rt_theta2, _ = load_agent_data('data_3A/servoPDF-2_0.mat')        # Changed to 'data_3A'
-rt_t3, rt_theta3, _ = load_agent_data('data_3A/servoPDF-3_0.mat')        # Added Agent 3
+rt_t1, rt_theta1, theta_d = load_agent_data('data_3A/servoPDF-1_0.mat') 
+rt_t2, rt_theta2, _ = load_agent_data('data_3A/servoPDF-2_0.mat')       
+rt_t3, rt_theta3, _ = load_agent_data('data_3A/servoPDF-3_0.mat')       
 
 # Compute initial safe reward
 reward_0, os1_0, os2_0, os3_0 = compute_reward(theta_d, rt_theta1, rt_theta2, rt_theta3, rt_t1, rt_t2, rt_t3)
@@ -211,8 +211,7 @@ reward_0, os1_0, os2_0, os3_0 = compute_reward(theta_d, rt_theta1, rt_theta2, rt
 print(f'Initial reward: {reward_0}')
 print(f"Initial error1: {os1_0}")
 print(f"Initial error2: {os2_0}")
-print(f"Initial error3: {os3_0}")  # Added Agent 3
-
+print(f"Initial error3: {os3_0}") 
 wait = input("Press Enter to start Bayesian Optimization...")
 
 # =================== Bayesian Optimization ===================
@@ -251,7 +250,7 @@ K_bounds = [(0.01, 10), (0.01, 1)]
 
 agent1 = Agent(1, K_bounds, x0_1, reward_0)
 agent2 = Agent(2, K_bounds, x0_2, reward_0)
-agent3 = Agent(3, K_bounds, x0_3, reward_0)  # Added Agent 3
+agent3 = Agent(3, K_bounds, x0_3, reward_0)  
 
 # Quarc Experiment
 def run_experiment(kp1, kd1, kp2, kd2, kp3, kd3, iteration):
@@ -263,18 +262,18 @@ def run_experiment(kp1, kd1, kp2, kd2, kp3, kd3, iteration):
 
     sent_command(target_uri_1, modelName, gain_arg1, std_args)
     sent_command(target_uri_2, modelName, gain_arg2, std_args)
-    sent_command(target_uri_3, modelName, gain_arg3, std_args)  # Added Agent 3
+    sent_command(target_uri_3, modelName, gain_arg3, std_args) 
 
     # Await experiment completion
     time.sleep(7)
 
     retrieve_data(target_uri_1, modelName, gain_arg1, std_args, 1, iteration)
     retrieve_data(target_uri_2, modelName, gain_arg2, std_args, 2, iteration)
-    retrieve_data(target_uri_3, modelName, gain_arg3, std_args, 3, iteration)  # Added Agent 3
+    retrieve_data(target_uri_3, modelName, gain_arg3, std_args, 3, iteration) 
 
-    rt_t1, rt_theta1, theta_d = load_agent_data(f'data_3A/servoPDF-1_{iteration}.mat')  # Changed to 'data_3A'
-    rt_t2, rt_theta2, _ = load_agent_data(f'data_3A/servoPDF-2_{iteration}.mat')        # Changed to 'data_3A'
-    rt_t3, rt_theta3, _ = load_agent_data(f'data_3A/servoPDF-3_{iteration}.mat')        # Added Agent 3
+    rt_t1, rt_theta1, theta_d = load_agent_data(f'data_3A/servoPDF-1_{iteration}.mat') 
+    rt_t2, rt_theta2, _ = load_agent_data(f'data_3A/servoPDF-2_{iteration}.mat')       
+    rt_t3, rt_theta3, _ = load_agent_data(f'data_3A/servoPDF-3_{iteration}.mat')     
     
     reward, os1, os2, os3 = compute_reward(theta_d, rt_theta1, rt_theta2, rt_theta3, rt_t1, rt_t2, rt_t3)
 
@@ -289,16 +288,16 @@ if not os.path.exists(agent_data_dir):
 
 with open(f'{agent_data_dir}/agent1_data.txt', 'w', newline='') as f1, \
      open(f'{agent_data_dir}/agent2_data.txt', 'w', newline='') as f2, \
-     open(f'{agent_data_dir}/agent3_data.txt', 'w', newline='') as f3:  # Added Agent 3
+     open(f'{agent_data_dir}/agent3_data.txt', 'w', newline='') as f3: 
     writer1 = csv.writer(f1)
     writer2 = csv.writer(f2)
-    writer3 = csv.writer(f3)  # Added Agent 3
+    writer3 = csv.writer(f3)  
     writer1.writerow(['Iteration', 'Kp', 'Kd', 'Reward'])
     writer2.writerow(['Iteration', 'Kp', 'Kd', 'Reward'])
-    writer3.writerow(['Iteration', 'Kp', 'Kd', 'Reward'])  # Added Agent 3
+    writer3.writerow(['Iteration', 'Kp', 'Kd', 'Reward'])  
     writer1.writerow([0, x0_1[0], x0_1[1], reward_0])
     writer2.writerow([0, x0_2[0], x0_2[1], reward_0])
-    writer3.writerow([0, x0_3[0], x0_3[1], reward_0])  # Added Agent 3
+    writer3.writerow([0, x0_3[0], x0_3[1], reward_0]) 
 
 with open(f'{agent_data_dir}/rewards.txt', 'w') as f:
     f.write('Iteration,Reward\n')
@@ -310,7 +309,7 @@ for iteration in range(1, N+1):
     # Get next Kp values from agents
     K1_next = agent1.optimize()
     K2_next = agent2.optimize()
-    K3_next = agent3.optimize()  # Added Agent 3
+    K3_next = agent3.optimize() 
 
     print(f"Iteration {iteration}, Agent 1:  -Kp {K1_next[0]} -Kd {K1_next[1]}, Agent 2: -Kp {K2_next[0]} -Kd {K2_next[1]}, Agent 3: -Kp {K3_next[0]} -Kd {K3_next[1]}")
 
@@ -322,18 +321,18 @@ for iteration in range(1, N+1):
     # Update agents with observations
     agent1.update(K1_next, y)
     agent2.update(K2_next, y)
-    agent3.update(K3_next, y)  # Added Agent 3
+    agent3.update(K3_next, y)  
     
     # Save agent's data to text files
     with open(f'{agent_data_dir}/agent1_data.txt', 'a', newline='') as f1, \
          open(f'{agent_data_dir}/agent2_data.txt', 'a', newline='') as f2, \
-         open(f'{agent_data_dir}/agent3_data.txt', 'a', newline='') as f3:  # Added Agent 3
+         open(f'{agent_data_dir}/agent3_data.txt', 'a', newline='') as f3: 
         writer1 = csv.writer(f1)
         writer2 = csv.writer(f2)
-        writer3 = csv.writer(f3)  # Added Agent 3
+        writer3 = csv.writer(f3) 
         writer1.writerow([iteration, K1_next[0], K1_next[1], y])
         writer2.writerow([iteration, K2_next[0], K2_next[1], y])
-        writer3.writerow([iteration, K3_next[0], K3_next[1], y])  # Added Agent 3
+        writer3.writerow([iteration, K3_next[0], K3_next[1], y])  
 
     # Save rewards to a text file
     with open(f'{agent_data_dir}/rewards.txt', 'a') as f:
@@ -342,9 +341,9 @@ for iteration in range(1, N+1):
     # Plot and save agents' opt plots in one figure with three subplots
     x_max_1, y_max_1 = agent1.opt.get_maximum()
     x_max_2, y_max_2 = agent2.opt.get_maximum()
-    x_max_3, y_max_3 = agent3.opt.get_maximum()  # Added Agent 3
+    x_max_3, y_max_3 = agent3.opt.get_maximum()  
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))  # Changed to 3 subplots
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))  
 
     # Agent 1 plot
     agent1.opt.plot(100, axes[0])
@@ -371,7 +370,7 @@ for iteration in range(1, N+1):
     axes[2].legend()
 
     plt.tight_layout()
-    plt.savefig(f'plots_3A/agents_iteration_{iteration}.png')  # Changed to 'plots_3A'
+    plt.savefig(f'plots_3A/agents_iteration_{iteration}.png')  
     plt.close()
 
 print("========= BAYESIAN OPTIMIZATION COMPLETED =========")
@@ -398,7 +397,7 @@ best_iteration = iterations_list[max_reward_index]
 print(f'Best Experimental Iteration: {best_iteration} | Reward - {max_reward}')
 print(f'Agent 1 Kp, Kd: {agent1.kp_values[best_iteration]}')
 print(f'Agent 2 Kp, Kd: {agent2.kp_values[best_iteration]}')
-print(f'Agent 3 Kp, Kd: {agent3.kp_values[best_iteration]}')  # Added Agent 3
+print(f'Agent 3 Kp, Kd: {agent3.kp_values[best_iteration]}') 
 
 # Plot Kp values over iterations
 iterations = np.arange(0, N+1)
@@ -408,8 +407,8 @@ agent1_iterations = []
 agent1_rewards = []
 agent2_iterations = []
 agent2_rewards = []
-agent3_iterations = []  # Added Agent 3
-agent3_rewards = []     # Added Agent 3
+agent3_iterations = []  
+agent3_rewards = []     
 
 with open(f'{agent_data_dir}/agent1_data.txt', 'r') as f1:
     reader = csv.reader(f1)
@@ -425,7 +424,7 @@ with open(f'{agent_data_dir}/agent2_data.txt', 'r') as f2:
         agent2_iterations.append(int(row[0]))
         agent2_rewards.append(float(row[3]))
 
-with open(f'{agent_data_dir}/agent3_data.txt', 'r') as f3:  # Added Agent 3
+with open(f'{agent_data_dir}/agent3_data.txt', 'r') as f3:  
     reader = csv.reader(f3)
     next(reader)  # Skip header
     for row in reader:
@@ -435,8 +434,7 @@ with open(f'{agent_data_dir}/agent3_data.txt', 'r') as f3:  # Added Agent 3
 plt.figure()
 plt.plot(agent1_iterations, agent1_rewards, label='Agent 1 Reward')
 plt.plot(agent2_iterations, agent2_rewards, label='Agent 2 Reward')
-plt.plot(agent3_iterations, agent3_rewards, label='Agent 3 Reward')  # Added Agent 3
-plt.xlabel('Iteration')
+plt.plot(agent3_iterations, agent3_rewards, label='Agent 3 Reward')  
 plt.ylabel('Reward') 
 plt.legend()
 plt.title('Reward over iterations')
@@ -473,13 +471,13 @@ agent3.update(x_estimated_3, y_estimated)  # Added Agent 3
 
 with open(f'{agent_data_dir}/agent1_data.txt', 'a', newline='') as f1, \
      open(f'{agent_data_dir}/agent2_data.txt', 'a', newline='') as f2, \
-     open(f'{agent_data_dir}/agent3_data.txt', 'a', newline='') as f3:  # Added Agent 3
+     open(f'{agent_data_dir}/agent3_data.txt', 'a', newline='') as f3:  
     writer1 = csv.writer(f1)
     writer2 = csv.writer(f2)
-    writer3 = csv.writer(f3)  # Added Agent 3
+    writer3 = csv.writer(f3)  
     writer1.writerow([final_iteration, x_estimated_1[0], x_estimated_1[1], y_estimated])
     writer2.writerow([final_iteration, x_estimated_2[0], x_estimated_2[1], y_estimated])
-    writer3.writerow([final_iteration, x_estimated_3[0], x_estimated_3[1], y_estimated])  # Added Agent 3
+    writer3.writerow([final_iteration, x_estimated_3[0], x_estimated_3[1], y_estimated])  
 
 with open(f'{agent_data_dir}/rewards.txt', 'a') as f:
     f.write(f"{final_iteration},{y_estimated}\n")
