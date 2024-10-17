@@ -139,7 +139,19 @@ def plot_iteration(iteration_number):
     
     mean, var  = opt1.gp.predict(X_grid) 
     
-    print(mean.shape)
+    # Plot safety threshold contour for Agent 1
+    mean, var = gp1.predict(X_grid)
+    std_dev = np.sqrt(var.squeeze())
+    print(opt1.beta(opt1.t))
+    beta_std = opt1.beta(opt1.t) * std_dev
+    lower_confidence = mean - beta_std
+    Z = lower_confidence.reshape(Kp_grid.shape)
+    print(opt1.fmin)
+    # Plot the safety threshold contour line
+    contour1 = axes[0].contour(Kp_grid, Kd_grid, Z, levels=[opt1.fmin[0]], colors='r', linestyles='dashed', linewidths=2)
+    axes[0].clabel(contour1, inline=True)
+    axes[0].legend()
+    
     
     axes[0].legend()
 
