@@ -122,7 +122,7 @@ def plot_iteration(iteration_number):
     rt_t3, rt_theta3, _ = load_agent_data(f'{data_dir}/servoPDF-3_{iteration_number}.mat')
 
     # Plot the figure with 4 subplots
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(20, 10))
     axes = axes.flatten()
     
    # Generate a grid for plotting safe contour
@@ -130,9 +130,7 @@ def plot_iteration(iteration_number):
     kd = np.linspace(K_bounds[1][0], K_bounds[1][1], 100)
     Kp_grid, Kd_grid = np.meshgrid(kp, kd)
     X_grid = np.vstack([Kp_grid.ravel(), Kd_grid.ravel()]).T
-    
-    print(X_grid.shape)
-    print("kernel1", kernel1)
+
     
     
     # Agent 1 plot
@@ -148,10 +146,11 @@ def plot_iteration(iteration_number):
     beta_std = opt1.beta(opt1.t) * std_dev
     lower_confidence = mean - beta_std
     Z = lower_confidence.reshape(Kp_grid.shape)
-    # Plot the safety threshold contour line
     contour1 = axes[0].contour(Kp_grid, Kd_grid, Z, levels=[opt1.fmin], colors='k', linestyles='dashed', linewidths=2)
     axes[0].clabel(contour1, inline=True)
-    axes[0].legend()
+
+
+    # axes[0].legend()
     
 
     # Agent 2 plot
@@ -169,7 +168,7 @@ def plot_iteration(iteration_number):
     Z = lower_confidence.reshape(Kp_grid.shape)
     contour2 = axes[1].contour(Kp_grid, Kd_grid, Z, levels=[opt2.fmin], colors='k', linestyles='dashed', linewidths=2)
     axes[1].clabel(contour2, inline=True)
-    axes[1].legend()
+    # axes[1].legend()
         
 
     # Agent 3 plot
@@ -187,9 +186,8 @@ def plot_iteration(iteration_number):
     Z = lower_confidence.reshape(Kp_grid.shape)
     contour3 = axes[2].contour(Kp_grid, Kd_grid, Z, levels=[opt3.fmin], colors='k', linestyles='dashed', linewidths=2)
     axes[2].clabel(contour3, inline=True)
-    axes[2].legend()
+    # axes[2].legend()
         
-    
 
     # State response plot
     axes[3].plot(rt_t1, rt_theta1, label='Agent-1')
@@ -200,9 +198,9 @@ def plot_iteration(iteration_number):
     axes[3].set_xlabel('t (s)')
     axes[3].set_ylabel('theta')
     axes[3].set_title(f"Theta over time - Iteration {iteration_number}")
-    axes[3].legend()
+    # axes[3].legend()
 
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig(f'plots_3A/iteration_{iteration_number}.png')
     plt.show()
 
