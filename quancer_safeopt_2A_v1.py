@@ -80,7 +80,9 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_t1, rt_t2):
     integral_os1 = np.trapz(os1, rt_t1)
     integral_os2 = np.trapz(os2, rt_t2)
     total_os = 0.5*integral_os1 + 0.5*integral_os2
+    
     integral_error12 = np.trapz(error12, rt_t1)
+    
     total_error = total_os + 3* integral_error12
     total_error = 1 / total_error 
     

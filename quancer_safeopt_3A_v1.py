@@ -13,7 +13,7 @@ import os  # For directory operations
 import csv  # For writing and reading CSV files
 import safeopt
 import GPy
-from plot_iteration import plot_iteration
+from plot_iteration_3A import plot_iteration
 
 ################ PHASE 1 ################
 
