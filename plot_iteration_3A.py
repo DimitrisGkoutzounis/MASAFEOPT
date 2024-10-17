@@ -122,14 +122,19 @@ def plot_iteration(iteration_number):
     rt_t3, rt_theta3, _ = load_agent_data(f'{data_dir}/servoPDF-3_{iteration_number}.mat')
 
     # Plot the figure with 4 subplots
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
     axes = axes.flatten()
     
+   # Generate a grid for plotting safe contour
     kp = np.linspace(K_bounds[0][0], K_bounds[0][1], 100)
     kd = np.linspace(K_bounds[1][0], K_bounds[1][1], 100)
     Kp_grid, Kd_grid = np.meshgrid(kp, kd)
     X_grid = np.vstack([Kp_grid.ravel(), Kd_grid.ravel()]).T
-
+    
+    print(X_grid.shape)
+    print("kernel1", kernel1)
+    
+    
     # Agent 1 plot
     opt1.plot(100, axes[0])
     axes[0].scatter(x_max_1[0], x_max_1[1], marker="*", color='red', s=100, label='Current Maximum')
@@ -137,23 +142,17 @@ def plot_iteration(iteration_number):
     axes[0].set_xlabel('Kp')
     axes[0].set_ylabel('Kd')
     
-    mean, var  = opt1.gp.predict(X_grid) 
-    
-    # Plot safety threshold contour for Agent 1
-    mean, var = gp1.predict(X_grid)
-    std_dev = np.sqrt(var.squeeze())
-    print(opt1.beta(opt1.t))
+    # Plot safety threshold contour for Agent 1    
+    mean, var = opt1.gp.predict(X_grid)
+    std_dev = np.sqrt(var)
     beta_std = opt1.beta(opt1.t) * std_dev
     lower_confidence = mean - beta_std
     Z = lower_confidence.reshape(Kp_grid.shape)
-    print(opt1.fmin)
     # Plot the safety threshold contour line
-    contour1 = axes[0].contour(Kp_grid, Kd_grid, Z, levels=[opt1.fmin[0]], colors='r', linestyles='dashed', linewidths=2)
+    contour1 = axes[0].contour(Kp_grid, Kd_grid, Z, levels=[opt1.fmin], colors='k', linestyles='dashed', linewidths=2)
     axes[0].clabel(contour1, inline=True)
     axes[0].legend()
     
-    
-    axes[0].legend()
 
     # Agent 2 plot
     opt2.plot(100, axes[1])
@@ -161,7 +160,17 @@ def plot_iteration(iteration_number):
     axes[1].set_title(f'Agent 2 - Iteration {iteration_number}')
     axes[1].set_xlabel('Kp')
     axes[1].set_ylabel('Kd')
+    
+    # Plot safety threshold contour for Agent 2
+    mean, var = opt2.gp.predict(X_grid)
+    std_dev = np.sqrt(var)
+    beta_std = opt2.beta(opt2.t) * std_dev
+    lower_confidence = mean - beta_std
+    Z = lower_confidence.reshape(Kp_grid.shape)
+    contour2 = axes[1].contour(Kp_grid, Kd_grid, Z, levels=[opt2.fmin], colors='k', linestyles='dashed', linewidths=2)
+    axes[1].clabel(contour2, inline=True)
     axes[1].legend()
+        
 
     # Agent 3 plot
     opt3.plot(100, axes[2])
@@ -169,7 +178,18 @@ def plot_iteration(iteration_number):
     axes[2].set_title(f'Agent 3 - Iteration {iteration_number}')
     axes[2].set_xlabel('Kp')
     axes[2].set_ylabel('Kd')
+    
+    # Plot safety threshold contour for Agent 3
+    mean, var = opt3.gp.predict(X_grid)
+    std_dev = np.sqrt(var)
+    beta_std = opt3.beta(opt3.t) * std_dev
+    lower_confidence = mean - beta_std
+    Z = lower_confidence.reshape(Kp_grid.shape)
+    contour3 = axes[2].contour(Kp_grid, Kd_grid, Z, levels=[opt3.fmin], colors='k', linestyles='dashed', linewidths=2)
+    axes[2].clabel(contour3, inline=True)
     axes[2].legend()
+        
+    
 
     # State response plot
     axes[3].plot(rt_t1, rt_theta1, label='Agent-1')
@@ -193,6 +213,7 @@ def plot_iteration(iteration_number):
     plt.ylabel('Kd')
     plt.savefig(f'plots_3A/iteration_{iteration_number}_agent1_3d.png')
     plt.show()
+    
 
     opt2.plot(100, axis=None, plot_3d=True)
     plt.title(f'Agent 2 - Iteration {iteration_number}')
