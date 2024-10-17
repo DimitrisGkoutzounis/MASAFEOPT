@@ -85,9 +85,11 @@ def compute_reward(theta_d, rt_theta1, rt_theta2, rt_theta3, rt_t1, rt_t2, rt_t3
     integral_error12 = np.trapz(error12, rt_t1)
     integral_error13 = np.trapz(error13, rt_t1)
     integral_error23 = np.trapz(error23, rt_t1)
-    total_inter_agent_error = (integral_error12 + integral_error13 + integral_error23) / 3
 
-    total_error = total_os + 3 * total_inter_agent_error
+
+    total_inter_agent_error = integral_error12 + integral_error13 + integral_error23
+
+    total_error = total_os + 3  * total_inter_agent_error
     total_error = 1 / total_error 
     
     os1 = 1 / integral_os1
@@ -155,8 +157,8 @@ kd1_0 = 0.7
 kp2_0 = 4
 kd2_0 = 0.5
 
-kp3_0 = 4.5  # Initial gains for Agent 3
-kd3_0 = 0.6
+kp3_0 = 6  # Initial gains for Agent 3
+kd3_0 = 0.8
 
 x0_1 = (kp1_0, kd1_0)
 x0_2 = (kp2_0, kd2_0)
