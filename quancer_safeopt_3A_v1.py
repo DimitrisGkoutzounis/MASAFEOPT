@@ -439,7 +439,7 @@ plt.ylabel('Reward')
 plt.legend()
 plt.title('Reward over iterations')
 plt.grid(True)
-plt.savefig('plots_3A/reward_over_iterations.png')  # Changed to 'plots_3A'
+plt.savefig('plots_3A/reward_over_iterations.png')  
 plt.show()
 
 # Call the function to plot the best iteration
@@ -449,7 +449,7 @@ print(f'========== EXECUTING BEST ESTIMATED PARAMETERS ==========')
 # Get the estimated best parameters from the GP models
 x_estimated_1, y_estimated_1 = agent1.opt.get_maximum()
 x_estimated_2, y_estimated_2 = agent2.opt.get_maximum()
-x_estimated_3, y_estimated_3 = agent3.opt.get_maximum()  # Added Agent 3
+x_estimated_3, y_estimated_3 = agent3.opt.get_maximum()  
 
 # Increment the iteration number for the final experiment
 final_iteration = N + 2
@@ -467,7 +467,7 @@ print(f"Reward: {y_estimated}")
 # Update agents with observations from the final experiment
 agent1.update(x_estimated_1, y_estimated)
 agent2.update(x_estimated_2, y_estimated)
-agent3.update(x_estimated_3, y_estimated)  # Added Agent 3
+agent3.update(x_estimated_3, y_estimated) 
 
 with open(f'{agent_data_dir}/agent1_data.txt', 'a', newline='') as f1, \
      open(f'{agent_data_dir}/agent2_data.txt', 'a', newline='') as f2, \
