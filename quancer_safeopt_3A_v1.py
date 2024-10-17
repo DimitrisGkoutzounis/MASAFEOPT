@@ -124,11 +124,11 @@ def plot_data(rt_t1, rt_theta1, os1, rt_t2, rt_theta2, os2, rt_t3, rt_theta3, os
     plt.show()
 
 # Create directories to save data and plots
-if not os.path.exists('plots_3A'):  # Changed to 'plots_3A'
+if not os.path.exists('plots_3A'):
     os.makedirs('plots_3A')
-if not os.path.exists('data_3A'):  # Changed to 'data_3A'
+if not os.path.exists('data_3A'): 
     os.makedirs('data_3A')
-if not os.path.exists('agent_data_3A'):  # Changed to 'agent_data_3A'
+if not os.path.exists('agent_data_3A'): 
     os.makedirs('agent_data_3A')
 
 modelName = 'servoPDF'
@@ -136,19 +136,19 @@ modelName = 'servoPDF'
 # Target URIs for the agents
 target_uri_1 = 'tcpip://172.22.11.2:17000?keep_alive=1'
 target_uri_2 = 'tcpip://172.22.11.10:17000?keep_alive=1'
-target_uri_3 = 'tcpip://172.22.11.18:17000?keep_alive=1'  # Added Agent 3
+target_uri_3 = 'tcpip://172.22.11.18:17000?keep_alive=1'  
 
 std_args = ' -d ./tmp -uri tcpip://linux-dev:17001'
 
 # Download model to target
 sys1dl = f'quarc_run -D -t {target_uri_1} {modelName}.rt-linux_rt_armv7{std_args}'
 sys2dl = f'quarc_run -D -t {target_uri_2} {modelName}.rt-linux_rt_armv7{std_args}'
-sys3dl = f'quarc_run -D -t {target_uri_3} {modelName}.rt-linux_rt_armv7{std_args}'  # Added Agent 3
+sys3dl = f'quarc_run -D -t {target_uri_3} {modelName}.rt-linux_rt_armv7{std_args}' 
 
 # Run the system commands
 subprocess.call(sys1dl, shell=True)
 subprocess.call(sys2dl, shell=True)
-subprocess.call(sys3dl, shell=True)  # Added Agent 3
+subprocess.call(sys3dl, shell=True)  
 
 # Initial safepoint values.
 kp1_0 = 5
@@ -157,7 +157,7 @@ kd1_0 = 0.7
 kp2_0 = 4
 kd2_0 = 0.5
 
-kp3_0 = 6  # Initial gains for Agent 3
+kp3_0 = 6  
 kd3_0 = 0.8
 
 x0_1 = (kp1_0, kd1_0)
@@ -166,8 +166,8 @@ x0_3 = (kp3_0, kd3_0)
 
 # Delay difference between the agents
 td1 = 0.09
-td2 = 0.045  # Assuming same delay for Agent 2
-td3 = 0.001  # Added delay for Agent 3
+td2 = 0.045  
+td3 = 0.001 
 
 # Create gain arguments
 gain_arg1 = f' -Kp {kp1_0} -Kd {kd1_0}'
@@ -230,7 +230,7 @@ class Agent:
         self.gp = GPy.models.GPRegression(self.x0, self.y0, self.kernel, noise_var=0.05**2)
 
         self.parameter_set = safeopt.linearly_spaced_combinations(self.bounds, 100)
-        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.1, beta=4, threshold=0.05)
+        self.opt = safeopt.SafeOpt(self.gp, self.parameter_set, 0.03, beta=1.0, threshold=0.05)
 
         self.kp_values = [safe_point]
         self.rewards = [initial_reward]
@@ -282,7 +282,7 @@ def run_experiment(kp1, kd1, kp2, kd2, kp3, kd3, iteration):
 N = 50  # Number of iterations
 
 # Initialize data files
-agent_data_dir = 'agent_data_3A'  # Changed to 'agent_data_3A'
+agent_data_dir = 'agent_data_3A'  
 if not os.path.exists(agent_data_dir):
     os.makedirs(agent_data_dir)
 
